@@ -1,0 +1,2 @@
+FieldName	headerOffset	offset	length	encoding	interpretation
+record_length	0	0	2	1 HEX Word	string
