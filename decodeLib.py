@@ -75,7 +75,14 @@ def _VoiceStartTime(vr,length,Act,offset=0):
         retString.extend(_BcdWord(vr,4,Act,5*2))
     return retString
 
+#===============================================================================
+# 3 BCD Byte : orig_mcz_duration    41    156    3    3 BCD Byte    string
+# 1201    0112
+#===============================================================================
 def _BcdByteReversed(vr,length,Act,offset=0):
+    """
+    1201    0112
+    """
     retString=[]
     if Act=='U':
         v=''
@@ -93,6 +100,9 @@ def _BcdByteReversed(vr,length,Act,offset=0):
             retString.extend("%c"%v1) 
     return retString[::-1]
 
+#===============================================================================
+# calling_subs_first_lac    41    99    2    1 HEX Word    string
+#===============================================================================
 def _HexWord(vr,length,Act,offset=0):
     retString=[]
     if Act=='U':
@@ -101,6 +111,7 @@ def _HexWord(vr,length,Act,offset=0):
             v+=struct.unpack('c',vr[offset+x])[0]
         for x in range(4-len(v)):
                 v+=b'\x00'
+        print v
         return [struct.unpack('i',v)[0]]
     elif Act=='P':
         v="%x"%vr[0]
@@ -111,6 +122,9 @@ def _HexWord(vr,length,Act,offset=0):
             retString.extend("%c"%v1)
     return retString[::-1]
 
+
+def DiamCoder(vr,length,Act,type,offset=0):
+    pass
 
                        
 def mapper():

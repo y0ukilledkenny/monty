@@ -7,14 +7,13 @@ import decodeLib
 import sys
 
 
-diameterSt={"version":[1,0],\
+diameterHeader={"version":[1,0],\
             "messageLength":[3,1],\
             "commandFlags":[1,4],\
             "commandCode":[3,5],\
             "applicationID":[4,8],\
             "hopByhopIdent":[4,12],\
             "End2EndIdent":[4,16],\
-            "AVP":[4,20]
             }
 
 #command code to AVP conf mapper
@@ -94,9 +93,9 @@ def countRecords(iFileType,iFile):
 
 def decodeDMfileInp(Data):
     CER={}
-    for ATT in diameterSt:
-        offset=2*diameterSt[ATT][1]
-        length=2*diameterSt[ATT][0]
+    for ATT in diameterHeader:
+        offset=2*diameterHeader[ATT][1]
+        length=2*diameterHeader[ATT][0]
         print ATT,": ",Data[offset:offset+length]
         CER[ATT]=Data[offset:offset+length].decode("hex")
     return CER
