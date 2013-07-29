@@ -4,7 +4,7 @@ import parseFunctions as PF
 from shutil import copyfile
 from optparse import OptionParser
 
-
+logging.basicConfig(filename='monty.log',level=logging.DEBUG)
     
 
 if __name__=='__main__':
@@ -12,6 +12,7 @@ if __name__=='__main__':
     parser.add_option("-t",dest='iFileType',type="string",default="",help="Type of input file (\'voice, sms etc\'")
     parser.add_option("-i",dest='iFile',type="string",default="",help="absolute path to input file")
     parser.add_option("-o",dest='oFile',type="string",default="",help="aboslute path to output file")
+    parser.add_option("-m",dest='mode',type="string",default="I",help="Editing mode : R - Read, E - Edit, I - Interactive, Default: I")
     (options,args)=parser.parse_args()
     
     print options
@@ -39,13 +40,32 @@ if __name__=='__main__':
         print "Input file type is required in order to correctly parse the input file...exit(1)"
         sys.exit(1)
     else:
-        if not PF.RecTypeDict.has_key(options.iFileType):
+        if not PF.MapRecType2File.has_key(options.iFileType):
             print "Input file type unspecified in configuration: unable to handler...exit(1)"
             sys.exit(1)
         else:
             iFileType=options.iFileType
-            print PF.RecTypeDict[iFileType]
-            fileStats,vr=PF.countRecords(iFileType,iFile)
-            PF.decodeEventRecord(iFileType,iFile,oFile,vr, fileStats,1)
+
+    if options.mode=='I':
+        if iFileType=="voice":
+            fileStats,vr=PF.countRecordsVoice(iFileType,iFile)
+            PF.printfileStats(fileStats,iFileType)
+            while True:
+                inp=raw_input("(action(R,E),record code,record number)$ ").split(',')
+                if len(inp)<3:
+                    print "! All three inputs mandatory"
+                    continue
+                Act,RC,RN=inp
+                RN=int(RN)
+                if Act not in ('E','R'):
+                    print "! Unsupported Action"
+                    continue
+                if not fileStats.has_key(RC):
+                    print "! Invalid record code"
+                    continue
+                if fileStats[RC][0]<RN:
+                    print "! Record Number out of bounds"
+                    continue
+                PF.decodeEventRecord(iFileType,iFile,oFile,vr, fileStats,RC,int(RN),Act)
 
         
