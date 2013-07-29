@@ -5,41 +5,10 @@ Created on Jul 2, 2013
 '''
 import decodeLib
 import sys
-
-
-diameterHeader={"version":[1,0],\
-            "messageLength":[3,1],\
-            "commandFlags":[1,4],\
-            "commandCode":[3,5],\
-            "applicationID":[4,8],\
-            "hopByhopIdent":[4,12],\
-            "End2EndIdent":[4,16],\
-            }
-
-#command code to AVP conf mapper
-CC2Conf={'257':'CER.Config'}
-
-MapRecType2File={'voice':{1:'config.voice.moc',\
-                     2:'config.voice.mtc',\
-                     3:'config.voice.cfw',\
-                     4:'config.voice.crs',\
-                     8:'config.voice.smo',\
-                     11:'config.voice.poc',\
-                     12:'config.voice.ptc',\
-                     24:'config.voice.coc',\
-                     5:'config.voice.sup',\
-                     0:'config.header.voice',\
-                     10:'config.trailer.voice'},\
-                 'header':{'voice':'header.voice',\
-                           'sms':'header.sms'},\
-                 'trailer':{'voice':'header.voice',\
-                            'sms':'header.sms'}\
-                 }
-
-RecTypeDict={'voice':{'header':41,'offset':2,'length':1,'encoding':'1 BCD Byte'}}
+import logging
+from confDictionary import MapRecType2File,diameterHeader
 
 decodeFMap=decodeLib.mapper()
-
 
 def readConffromFile(confile):
     config=open(confile)
@@ -53,24 +22,19 @@ def readConffromFile(confile):
         row=config.readline()
     return cv
 
-
-
-def populateConf(fileType,fileBuf):
-    RecTypeConf=RecTypeDict[fileType]
-    actualOffset=RecTypeConf['offset']+RecTypeConf['header']
-    
-    recType=decodeFMap[RecTypeConf['encoding']](fileBuf,RecTypeConf['length'],'U',actualOffset)
+def populateConf(fileType,RC,fileBuf):
+    """
+    Use FileStats and RC(record code) and RN(record number to determine the offset
+    Encoding and length is hard coded to \'1 BCD Byte\' and 1
+    """
     try:
-        return readConffromFile(MapRecType2File[fileType][recType[0]])
+        return readConffromFile(MapRecType2File[fileType][int(RC)])
     except IOError:
         print "Configuration file could not be read...exit(1)"
         sys.exit(1)
+ 
     
-    
-    
-    
-    
-def countRecords(iFileType,iFile):
+def countRecordsVoice(iFileType,iFile):
     iFile.seek(0)
     vr=iFile.read()
     recCount=0
@@ -89,37 +53,49 @@ def countRecords(iFileType,iFile):
         else:
             fileStats[str(recType)]=[1,nextOffset]
         nextOffset+=recordLength
+    logging.debug("Record Count Statistics: %s\n"%fileStats.viewitems())
     return fileStats,vr
 
-def decodeDMfileInp(Data):
+def printfileStats(fileStats,iFileType):
+    print "File Type: ",iFileType
+    print "%25s"%"Record Type"," : %s : %s"%("Record Code","Record Count")
+    for foo in fileStats:
+        if not MapRecType2File[iFileType].has_key(int(foo)):
+            logging.debug("ERROR:: Sub Record Type not found in configuration: %s | Stats will not be printed"%foo)
+            continue
+        print "%25s"%MapRecType2File[iFileType][int(foo)].split('.',1)[1]," : %s : %s"%(foo,fileStats[foo][0])
+    
+
+def decodeDiamfileInp(Data):
     CER={}
     for ATT in diameterHeader:
         offset=2*diameterHeader[ATT][1]
         length=2*diameterHeader[ATT][0]
         print ATT,": ",Data[offset:offset+length]
-        CER[ATT]=Data[offset:offset+length].decode("hex")
+        CER[ATT]=[Data[offset:offset+length].decode("hex"),diameterHeader[ATT][2]]
     return CER
     
     
     
-    
-def decodeEventRecord(iFileType,iFile,oFile, vr, fileStats,recNumber):
-    DD=populateConf(iFileType,vr)
+def decodeEventRecord(iFileType,iFile,oFile, vr, fileStats,RC,RN,Act='R'):
+    DD=populateConf(iFileType,RC,vr)
     for elm in DD:
-        offset=int(fileStats['1'][recNumber])+int(elm['offset'])
+        offset=int(fileStats[RC][RN])+int(elm['offset'])
         length=int(elm['length'])
         seq=decodeFMap[elm['encoding']](vr,length,'U',offset)
         pSeq=map(lambda x:'F' if x==15 else x,seq)
-        print elm['FieldName'],": ","".join(map(str,pSeq))
-        seq=list(raw_input('your value: '))
-        if len(seq)!=0:
-            pSeq=seq
-        seq=map(lambda x:15 if x=='F' else int(x),pSeq)
-        seq=decodeFMap[elm['encoding']](seq,len(seq),'P')
-        oFile.seek(offset)
-        for item in seq:
-            oFile.write("%c"%item)
-            
+        print "%25s"%elm['FieldName']," : %s"%"".join(map(str,pSeq))
+        
+        if Act=='E':
+            seq=list(raw_input("%25s"%'your value : '))
+            if len(seq)!=0:
+                pSeq=seq
+            seq=map(lambda x:15 if x=='F' else int(x),pSeq)
+            seq=decodeFMap[elm['encoding']](seq,len(seq),'P')
+            oFile.seek(offset)
+            for item in seq:
+                oFile.write("%c"%item)
+                
 
 def decodeHeader():
     pass

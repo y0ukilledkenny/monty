@@ -1,4 +1,7 @@
 import struct
+import logging
+
+logging.basicConfig(filename='monty.log',level=logging.DEBUG)
 
 #===============================================================================
 # lot of lousy code, I KNOW, the struct library can be used a lot more 
@@ -111,7 +114,6 @@ def _HexWord(vr,length,Act,offset=0):
             v+=struct.unpack('c',vr[offset+x])[0]
         for x in range(4-len(v)):
                 v+=b'\x00'
-        print v
         return [struct.unpack('i',v)[0]]
     elif Act=='P':
         v="%x"%vr[0]
@@ -123,8 +125,22 @@ def _HexWord(vr,length,Act,offset=0):
     return retString[::-1]
 
 
-def DiamCoder(vr,length,Act,type,offset=0):
+def DiamCoder(vr,length,Act,Attype,offset=0):
+    """ 
+    Encoding and decoding function for diameter related data
+    """
+    logging.debug("DiamCoder - Before fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
+    if Act=='U':
+        if Attype=='I':
+            for x in range((4-length%4)%4):
+                vr=b'\x00'+vr
+            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
+            return struct.unpack('!%dI'%(len(vr)/4),vr)
+        elif Attype=='CA':
+            return ['yolo']
     pass
+    
+    
 
                        
 def mapper():
@@ -135,7 +151,9 @@ def mapper():
             '3 BCD Byte':_BcdByteReversed,\
             '1 HEX Word':_HexWord,\
             '10 HEX Byte':_HexByte,\
-            '1 BCD Byte':_HexByteR}
+            '1 BCD Byte':_HexByteR,\
+            'DIAM':DiamCoder
+            }
     
 
 def printVal(arr):
