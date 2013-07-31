@@ -20,6 +20,7 @@ def readConffromFile(confile):
         val=row[:-1].split('\t')
         cv.append(dict(zip(header,val)))
         row=config.readline()
+    config.close()
     return cv
 
 def populateConf(fileType,RC,fileBuf):
@@ -66,14 +67,33 @@ def printfileStats(fileStats,iFileType):
         print "%25s"%MapRecType2File[iFileType][int(foo)].split('.',1)[1]," : %s : %s"%(foo,fileStats[foo][0])
     
 
-def decodeDiamfileInp(Data):
+def stripDHeader(Data):
     CER={}
     for ATT in diameterHeader:
-        offset=2*diameterHeader[ATT][1]
-        length=2*diameterHeader[ATT][0]
-        print ATT,": ",Data[offset:offset+length]
-        CER[ATT]=[Data[offset:offset+length].decode("hex"),diameterHeader[ATT][2]]
-    return CER
+        offset=diameterHeader[ATT][1]
+        length=diameterHeader[ATT][0]
+        CER[ATT]=[Data[offset:offset+length],diameterHeader[ATT][2]]
+    Header=Data[:20]
+    Data=Data[20:]
+    return CER,Header,Data
+
+def avpReadWrite(Data,conFG,mode='R'):
+    if mode=='R':
+        index=0
+        ATT=decodeFMap['DIAM'](Data[index:],4,'U','uint32')
+        for item in conFG:
+            if item['AVPC']==str(ATT):
+                if item['FTYPE']=='uint32':
+                    lgth=4
+                elif item['FTYPE']=='uint64':
+                    lgth=8
+                else:
+                    lgth=-1
+                val=decodeFMap['DIAM'](Data[3:],lgth,'U',item['FTYPE'])
+                print "AVP: ",ATT,"-",val
+            else:
+                print "fuck!!"
+    pass
     
     
     

@@ -131,13 +131,19 @@ def DiamCoder(vr,length,Act,Attype,offset=0):
     """
     logging.debug("DiamCoder - Before fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
     if Act=='U':
-        if Attype=='I':
+        if Attype=='uint32':
             for x in range((4-length%4)%4):
                 vr=b'\x00'+vr
             logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
-            return struct.unpack('!%dI'%(len(vr)/4),vr)
-        elif Attype=='CA':
-            return ['yolo']
+            return struct.unpack('!%dI'%(len(vr)/4),vr)[0]
+        elif Attype=='string':
+            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
+            return struct.unpack('!s',vr)[0]
+        elif Attype=='uint32':
+            for x in range((8-length%8)%8):
+                vr=b'\x00'+vr
+            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
+            return struct.unpack('!%dQ'%(len(vr)/8),vr)[0]
     pass
     
     

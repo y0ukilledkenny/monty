@@ -2,16 +2,16 @@
 #===============================================================================
 # 'I' - Integer, 'CA' - Character Array (Flags)
 #===============================================================================
-diameterHeader={"version":[1,0,'I'],\
-            "messageLength":[3,1,'I'],\
-            "commandFlags":[1,4,'CA'],\
-            "commandCode":[3,5,'I'],\
-            "applicationID":[4,8,'I'],\
-            "hopByhopIdent":[4,12,'I'],\
-            "End2EndIdent":[4,16,'I'],\
+diameterHeader={"version":[1,0,'uint32'],\
+            "messageLength":[3,1,'uint32'],\
+            "commandFlags":[1,4,'string'],\
+            "commandCode":[3,5,'uint32'],\
+            "applicationID":[4,8,'uint32'],\
+            "hopByhopIdent":[4,12,'uint32'],\
+            "End2EndIdent":[4,16,'uint32'],\
             }
 
-CC2Conf={'257':'CER.Config'}
+CC2Conf={257:'CER.config'}
 
 
 MapRecType2File={'voice':{1:'config.voice.moc',\
