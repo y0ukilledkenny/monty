@@ -77,23 +77,32 @@ def stripDHeader(Data):
     Data=Data[20:]
     return CER,Header,Data
 
-def avpReadWrite(Data,conFG,mode='R'):
+def avpReadWrite(Data,Dlen,conFG,mode='R'):  
     if mode=='R':
         index=0
-        ATT=decodeFMap['DIAM'](Data[index:],4,'U','uint32')
-        for item in conFG:
-            if item['AVPC']==str(ATT):
-                if item['FTYPE']=='uint32':
-                    lgth=4
-                elif item['FTYPE']=='uint64':
-                    lgth=8
-                else:
-                    lgth=-1
-                val=decodeFMap['DIAM'](Data[3:],lgth,'U',item['FTYPE'])
-                print "AVP: ",ATT,"-",val
+        while index!=Dlen:
+            ATT=decodeFMap['DIAM'](Data[index:],4,'U','uint32')
+            print("AVP: ",ATT,),
+            vendorID=''
+            if conFG.has_key(ATT):
+                ATTName=conFG[ATT][1]
+                print ATTName,
+                flags=decodeFMap['DIAM'](Data[index+4:],1,'U','string')
+                flags=bin(ord(flags))
+                flags=(8-len(flags[2:]))*'0'+flags[2:]
+                length=decodeFMap['DIAM'](Data[index+5:],3,'U','uint32')
+                print "length: ",length,
+                icr=0
+                if flags[0]=='1':
+                    vendorID=decodeFMap['DIAM'](Data[index+8:],4,'U','uint32')
+                    print vendorID
+                    icr=4
+                VAL=decodeFMap['DIAM'](Data[index+8+icr:],length-8-icr,'U',conFG[ATT][0])
+                print 'Value: ',VAL
             else:
-                print "fuck!!"
-    pass
+                print "AVP Code :%d not found in configuration: unable to continue ..."%ATT
+                exit(1)
+            index+=(length+((4-length%4)%4))
     
     
     

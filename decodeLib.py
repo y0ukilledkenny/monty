@@ -129,23 +129,23 @@ def DiamCoder(vr,length,Act,Attype,offset=0):
     """ 
     Encoding and decoding function for diameter related data
     """
-    logging.debug("DiamCoder - Before fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
+    logging.debug("DiamCoder - Before fixing length\n Act: %s, length: %s" %(Act,len(vr)))
     if Act=='U':
         if Attype=='uint32':
             for x in range((4-length%4)%4):
                 vr=b'\x00'+vr
-            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
-            return struct.unpack('!%dI'%(len(vr)/4),vr)[0]
+            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
+            return struct.unpack('!I',vr[offset:4])[0]
         elif Attype=='string':
-            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
-            return struct.unpack('!s',vr)[0]
-        elif Attype=='uint32':
+            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
+            val=struct.unpack('!%ds'%length,vr[offset:length])[0]
+            return val
+        elif Attype=='uint64':
             for x in range((8-length%8)%8):
                 vr=b'\x00'+vr
-            logging.debug("DiamCoder - After fixing length\n buffer: %s Act: %s, length: %s" %(vr,Act,len(vr)))
-            return struct.unpack('!%dQ'%(len(vr)/8),vr)[0]
+            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
+            return struct.unpack('!Q'%vr)[0]
     pass
-    
     
 
                        
