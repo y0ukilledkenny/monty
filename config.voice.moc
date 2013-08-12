@@ -1,9 +1,0 @@
-FieldName	headerOffset	offset	length	encoding	interpretation
-calling_imsi	41	28	8	8 BCD Byte	string
-called_number	41	73	12	12 Hex Byte	string
-called_number_ton	41	72	1	1 Hex Byte	string
-charging_start_time	41	136	7	5 BCD bytes + 1 BCD word	string
-orig_mcz_duration	41	156	3	3 BCD Byte	string
-calling_subs_first_lac	41	99	2	1 HEX Word	string
-calling_number	41	44	10	10 HEX Byte	string
-calling_number_ton	41	177	1	1 Hex Byte	string

@@ -7,6 +7,7 @@ import decodeLib
 import sys
 import logging
 from confDictionary import MapRecType2File,diameterHeader
+from confDictionary import diameterFlags as DF
 
 decodeFMap=decodeLib.mapper()
 
@@ -65,7 +66,7 @@ def printfileStats(fileStats,iFileType):
             logging.debug("ERROR:: Sub Record Type not found in configuration: %s | Stats will not be printed"%foo)
             continue
         print "%25s"%MapRecType2File[iFileType][int(foo)].split('.',1)[1]," : %s : %s"%(foo,fileStats[foo][0])
-    
+
 
 def stripDHeader(Data):
     CER={}
@@ -77,31 +78,34 @@ def stripDHeader(Data):
     Data=Data[20:]
     return CER,Header,Data
 
-def avpReadWrite(Data,Dlen,conFG,mode='R'):  
+def avpReadWrite(Data,conFG,mode='R'):
+    datalen=len(Data)
     if mode=='R':
         index=0
-        while index!=Dlen:
-            ATT=decodeFMap['DIAM'](Data[index:],4,'U','uint32')
-            print("AVP: ",ATT,),
-            vendorID=''
-            if conFG.has_key(ATT):
-                ATTName=conFG[ATT][1]
-                print ATTName,
-                flags=decodeFMap['DIAM'](Data[index+4:],1,'U','string')
-                flags=bin(ord(flags))
-                flags=(8-len(flags[2:]))*'0'+flags[2:]
-                length=decodeFMap['DIAM'](Data[index+5:],3,'U','uint32')
-                print "length: ",length,
-                icr=0
-                if flags[0]=='1':
-                    vendorID=decodeFMap['DIAM'](Data[index+8:],4,'U','uint32')
-                    print vendorID
-                    icr=4
-                VAL=decodeFMap['DIAM'](Data[index+8+icr:],length-8-icr,'U',conFG[ATT][0])
-                print 'Value: ',VAL
+        while index!=datalen:
+            logging.debug("INDEX :%d"%index)
+            ATT=decodeFMap['uint32'](Data[index:],4,'U')
+            logging.debug("AVP: %d"%ATT)
+            if not conFG.has_key(ATT):
+                print "AVP:  Code %d not found in configuration: unable to decode ..."%ATT
+                length=decodeFMap['uint32'](Data[index+5:],3,'U')
+                index+=(length+((4-length%4)%4))
+                continue
             else:
-                print "AVP Code :%d not found in configuration: unable to continue ..."%ATT
-                exit(1)
+                ATTName=conFG[ATT][1]
+                logging.debug(ATTName+'\t\t')
+                #===============================================================
+                # flags=(8-len(flags[2:]))*'0'+flags[2:]
+                #===============================================================
+                flags=ord(decodeFMap['string'](Data[index+4:],1,'U'))
+                length=decodeFMap['uint32'](Data[index+5:],3,'U')
+                vendorBytes=0
+                vendorID=None
+                if flags & DF.DIAMETER_FLAG_VENDOR:
+                    vendorID=decodeFMap['uint32'](Data[index+8:],4,'U')
+                    vendorBytes=4
+                VAL=decodeFMap[conFG[ATT][0]](Data[index+8+vendorBytes:],length-8-vendorBytes,'U')
+                print "AVP: %5d %32s | length: %2d | vendorID: %5s | Value: %s"%(ATT,ATTName,length,str(vendorID),str(VAL))
             index+=(length+((4-length%4)%4))
     
     

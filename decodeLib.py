@@ -1,7 +1,7 @@
 import struct
 import logging
-
-logging.basicConfig(filename='monty.log',level=logging.DEBUG)
+import codecs
+import time
 
 #===============================================================================
 # lot of lousy code, I KNOW, the struct library can be used a lot more 
@@ -125,30 +125,72 @@ def _HexWord(vr,length,Act,offset=0):
     return retString[::-1]
 
 
-def DiamCoder(vr,length,Act,Attype,offset=0):
-    """ 
-    Encoding and decoding function for diameter related data
-    """
-    logging.debug("DiamCoder - Before fixing length\n Act: %s, length: %s" %(Act,len(vr)))
-    if Act=='U':
-        if Attype=='uint32':
-            for x in range((4-length%4)%4):
-                vr=b'\x00'+vr
-            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
-            return struct.unpack('!I',vr[offset:4])[0]
-        elif Attype=='string':
-            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
-            val=struct.unpack('!%ds'%length,vr[offset:length])[0]
-            return val
-        elif Attype=='uint64':
-            for x in range((8-length%8)%8):
-                vr=b'\x00'+vr
-            logging.debug("DiamCoder - After fixing length\n Act: %s, length: %s" %(Act,len(vr)))
-            return struct.unpack('!Q'%vr)[0]
-    pass
     
+def epoch2date(sec):
+    t=time.localtime(sec)
+    return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
 
-                       
+def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):  
+    t=time.strptime("{0} {1} {2} {3} {4} {5}".format(tYear,tMon,tDate,tHr,tMin,tSec),"%Y %m %d %H %M %S")
+    return time.mktime(t) 
+
+def _uint32cod(vr,length,Act,offset=0):
+    logging.debug("DiamCoder - Before fixing length\n Act: %s, length: %s" %(Act,length))
+    if Act=='U':
+        for x in range((4-length%4)%4):
+            vr=b'\x00'+vr
+        return struct.unpack('!I',vr[offset:offset+4])[0]
+    elif Act=='P':
+        pass
+
+def _uint64cod(vr,length,Act,offset=0):
+    logging.debug("DiamCoder - Before fixing length\n Act: %s, length: %s" %(Act,length))
+    if Act=='U':
+        for x in range((8-length%8)%8):
+            vr=b'\x00'+vr
+        return struct.unpack('!Q',vr[offset:offset+8])[0]
+    elif Act=='P':
+        pass
+
+def _stringcod(vr,length,Act,offset=0):
+    if Act=='U':
+        val=struct.unpack('!%ds'%length,vr[offset:length])[0]
+        return val
+    elif Act=='P':
+        pass
+
+def _utf8Stringcod(vr,length,Act,offset=0):
+    pass
+
+def _timecod(vr,length,Act,offset=0):
+    """NTP time stamp format(fixed point decimal):
+    actual length 64 bits. 32 bits are epoch time since 1900, remaining 32 bits are fractional seconds(discarded) """
+    if Act=='U':
+        epochT=_uint32cod(vr[0:],4,'U')
+        date=epoch2date(epochT)
+        return date
+    
+#===============================================================================
+# def decode_Address(data):
+#     if len(data)<=16:
+#         data=data[4:12]
+#         ret=inet_ntop(socket.AF_INET,data.decode("hex"))
+#     else:
+#         data=data[4:36]    
+#         ret=inet_ntop(socket.AF_INET6,data.decode("hex"))
+#     return ret
+#===============================================================================
+
+def _addresscod(vr,length,Act,offset=0):
+        ADType=_uint32cod(vr[0:],2,'U')
+        if ADType==2:
+            pass
+        elif ADType==1:
+            val=[]
+            for x in range(4):
+                val.append(str(_uint32cod(vr[2+x:],1,'U')))
+            return ".".join(val)            
+
 def mapper():
     return {'8 BCD Byte':_BcdByte,\
             '12 Hex Byte':_HexByte,\
@@ -158,7 +200,11 @@ def mapper():
             '1 HEX Word':_HexWord,\
             '10 HEX Byte':_HexByte,\
             '1 BCD Byte':_HexByteR,\
-            'DIAM':DiamCoder
+            'uint32':_uint32cod,\
+            'uint64':_uint64cod,\
+            'string':_stringcod,\
+            'time':_timecod,\
+            'address':_addresscod
             }
     
 

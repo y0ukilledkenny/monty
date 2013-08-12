@@ -18,7 +18,7 @@ if __name__=='__main__':
     print options
     if options.iFile!="":    
         try:
-            iFile=open(options.iFile,'r+')
+            iFile=open(options.iFile,'rb+')
         except IOError:
             print "Input file could not be read...exit(1)"
             sys.exit(1)
@@ -29,7 +29,7 @@ if __name__=='__main__':
     if options.oFile!="" and options.oFile!=options.iFile:    
         try:
             ret=copyfile(options.iFile,options.oFile)
-            oFile=open(options.oFile,'r+')
+            oFile=open(options.oFile,'rb+')
         except IOError:
             print "Unable to create/open an output file...exit(1)"
             sys.exit(1)
